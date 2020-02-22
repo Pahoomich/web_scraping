@@ -1,5 +1,11 @@
+import time
+
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 import confing
 
 
@@ -26,12 +32,10 @@ def get_data(soup):
                                  href=True,
                                  attrs={"class": "graph-label"})
     game_id = item_game_result['href'][7:]
-    # print(game_id)
     game_stat.append(game_id)
 
     # get game result
     game_result = float(item_game_result.find('span').get_text()[:-1])
-    # print(game_result)
     game_stat.append(game_result)
 
     # get game stat
@@ -44,7 +48,6 @@ def get_data(soup):
     game_stat.append(float(stat_value_list[1]))
     # items
     game_stat.append(int(stat_value_list[2]))
-    # print(stat_value_list)
 
     return game_stat
 
@@ -56,15 +59,32 @@ def get_game_status(soup):
     return graph_element.find('div')['class'][1]
 
 
+def get_sec(time_str):
+    h, m, s = time_str.split(':')
+    return int(h) * 3600 + int(m) * 60 + int(s)
+
+
 driver = set_driver()
+driver.get(confing.url)
 
-soup = get_soup(driver)
-#
-print(get_data(soup))
+timer_get_data = get_sec('00:05:00')
+start_time = time.time()
+data_list = []
 
-game_status = get_game_status(soup)
+while True:
+    current_time = time.time()
+    if current_time >= start_time + timer_get_data:
+        break
 
-print(game_status)
+    try:
+        WebDriverWait(driver, 60).until(
+            EC.visibility_of_element_located((By.XPATH, "//div[@class='graph-wrapper finish']")))
+
+        soup = get_soup(driver)
+        data_list.append(get_data(soup))
+        time.sleep(5)
+    except:
+        time.sleep(5)
 
 driver.close()
 driver.quit()
