@@ -1,4 +1,5 @@
 import time
+import pandas as pd
 
 from selenium import webdriver
 from bs4 import BeautifulSoup
@@ -85,6 +86,9 @@ while True:
         time.sleep(5)
     except:
         time.sleep(5)
+
+df = pd.DataFrame(data=data_list, columns=['ID', 'Result', 'Number of Players', 'Total price', 'Number of Lots'])
+df.to_csv("./data_{}_sec.csv".format(timer_get_data), index=False)
 
 driver.close()
 driver.quit()
