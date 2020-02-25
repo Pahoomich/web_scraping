@@ -9,6 +9,16 @@ from selenium.webdriver.support import expected_conditions as EC
 
 import confing
 
+import sys
+import argparse
+
+
+def createParser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--timer', default='00:05:00')
+
+    return parser
+
 
 def set_driver():
     options = webdriver.ChromeOptions()
@@ -61,34 +71,42 @@ def get_game_status(soup):
 
 
 def get_sec(time_str):
-    h, m, s = time_str.split(':')
+    try:
+        h, m, s = time_str.split(':')
+    except ValueError:
+        print("Wrong time format \n The argument should look like HH:MM:SS")
+        sys.exit()
     return int(h) * 3600 + int(m) * 60 + int(s)
 
 
-driver = set_driver()
-driver.get(confing.url)
+if __name__ == '__main__':
+    parser = createParser()
+    namespace = parser.parse_args(sys.argv[1:])
+    timer_get_data = get_sec(namespace.timer)
 
-timer_get_data = get_sec('00:05:00')
-start_time = time.time()
-data_list = []
+    driver = set_driver()
+    driver.get(confing.url)
 
-while True:
-    current_time = time.time()
-    if current_time >= start_time + timer_get_data:
-        break
+    start_time = time.time()
+    data_list = []
 
-    try:
-        WebDriverWait(driver, 60).until(
-            EC.visibility_of_element_located((By.XPATH, "//div[@class='graph-wrapper finish']")))
+    while True:
+        current_time = time.time()
+        if current_time >= start_time + timer_get_data:
+            break
 
-        soup = get_soup(driver)
-        data_list.append(get_data(soup))
-        time.sleep(5)
-    except:
-        time.sleep(5)
+        try:
+            WebDriverWait(driver, 60).until(
+                EC.visibility_of_element_located((By.XPATH, "//div[@class='graph-wrapper finish']")))
 
-df = pd.DataFrame(data=data_list, columns=['ID', 'Result', 'Number of Players', 'Total price', 'Number of Lots'])
-df.to_csv("./data_{}_sec.csv".format(timer_get_data), index=False)
+            soup = get_soup(driver)
+            data_list.append(get_data(soup))
+            time.sleep(5)
+        except:
+            time.sleep(5)
 
-driver.close()
-driver.quit()
+    df = pd.DataFrame(data=data_list, columns=['ID', 'Result', 'Number of Players', 'Total price', 'Number of Lots'])
+    df.to_csv("./data_{}_sec.csv".format(timer_get_data), index=False)
+
+    driver.close()
+    driver.quit()
